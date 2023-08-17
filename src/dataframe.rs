@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use log;
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -25,7 +27,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
 
         let head_data = self.data[0..min_num].to_vec();
 
-        DataFrame { data: head_data }
+        DataFrame::new(head_data)
     }
 
     /// Return the number of rows of the DataFrame.
@@ -34,8 +36,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     }
 
     /// Apply a function for each row of a DataFrame and returns a new DataFrame.
-    pub fn apply<S: Clone + DeserializeOwned + Serialize, F>(&self, func: F) -> DataFrame<S>
-        where F: Fn(&D) -> S {
+    pub fn apply<S: Clone + DeserializeOwned + Serialize, F>(&self, func: F) -> DataFrame<S> where F: Fn(&D) -> S {
         let mut new_data = Vec::<S>::new();
 
         for row in self.data.iter() {
@@ -46,8 +47,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     }
 
     /// Filter the DataFrame with the condition given by the closure parameter.
-    pub fn filter<F>(&self, func: F) -> Self
-        where F: Fn(&D) -> bool {
+    pub fn filter<F>(&self, func: F) -> Self where F: Fn(&D) -> bool {
         let mut new_data = Vec::<D>::new();
 
         for row in self.data.iter() {
@@ -55,6 +55,26 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
                 new_data.push(row.clone())
             }
         }
+
+        DataFrame::new(new_data)
+    }
+
+    /// Sort the DataFrame by a comparison function and returns a new DataFrame sorted.
+    /// This sorting algorithm is not stable, i.e, does not preserve the order of equal elements.
+    pub fn sort<F>(&self, comp: F) -> Self where F: Fn(&D,&D) -> bool {
+        let mut new_data = Vec::<D>::new();
+
+        for row in self.data.iter() {
+            new_data.push(row.clone())
+        }
+
+        new_data.sort_unstable_by(|x1,x2| {
+            if comp(x1,x2) {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        });
 
         DataFrame::new(new_data)
     }
