@@ -17,6 +17,7 @@ cargo add combee
 1) Below an example of loading a CSV file, filtering the dataset, and applying a function to each row:
 
 ```rust
+use std::fmt::Display;
 use serde::{Serialize, Deserialize};
 
 use combee;
@@ -32,11 +33,20 @@ struct Message {
     message: String
 }
 
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 fn main() {
-    let df = combee::read_csv::<Data>(String::from("tests/fixtures/basic.csv")).unwrap();
+    let df = combee::read_csv::<Data>(String::from("dataset.csv")).unwrap();
     let df_filtered = df.filter(|row| row.age < 27);
-    let df_message = df.apply(|row| Message { message: format!("Hello {} with {} years!", row.name, row.age)});
+    let df_message = df_filtered.apply(|row| Message { message: format!("Hello {} with {} years!", row.name, row.age)});
     let messages = df_message.take(2);
+
+    println!("{}", messages[0]);
+    println!("{}", messages[1]);
 }
 ```
 
