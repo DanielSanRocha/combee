@@ -32,10 +32,12 @@ struct Message {
     message: String
 }
 
-let df = combee::read_csv::<Data>(String::from("tests/fixtures/basic.csv")).unwrap();
-let df_filtered = df.filter(|row| row.age < 27);
-let df_message = df.apply(|row| Message { message: format!("Hello {} with {} years!", row.name, row.age)});
-let messages = df_message.take(2);
+fn main() {
+    let df = combee::read_csv::<Data>(String::from("tests/fixtures/basic.csv")).unwrap();
+    let df_filtered = df.filter(|row| row.age < 27);
+    let df_message = df.apply(|row| Message { message: format!("Hello {} with {} years!", row.name, row.age)});
+    let messages = df_message.take(2);
+}
 ```
 
 ## Acknowledgments

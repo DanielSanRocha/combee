@@ -70,3 +70,15 @@ fn test_read_invalid_csv() {
         Err(e) => assert!(e.message.contains("string"))
     }
 }
+
+#[test]
+fn test_read_csv_unwrap() {
+    let df = combee::read_csv::<Data>(String::from("tests/fixtures/basic.csv")).unwrap();
+    assert_eq!(df.len(), 3);
+}
+
+#[test]
+fn test_read_csv_expects() {
+    let df = combee::read_csv::<Data>(String::from("tests/fixtures/basic.csv")).expect("msg");
+    assert_eq!(df.len(), 3);
+}
