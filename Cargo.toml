@@ -6,6 +6,10 @@ repository = "https://github.com/DanielSanRocha/combee"
 license-file = "LICENSE"
 version = "0.1.0"
 edition = "2021"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
 
 [dependencies]
 csv = "1"
