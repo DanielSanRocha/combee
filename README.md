@@ -2,7 +2,8 @@
 
 <img src="assets/combee.jpg" height="300" width="600"/>
 
-Combee is a simple actor system written in pure Rust.
+Combee is a flexible data analysis library inspired by pandas.
+
 
 ## Acknowledgments
 
