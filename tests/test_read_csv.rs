@@ -1,12 +1,17 @@
 use std::ops::Index;
-
 use serde::{Serialize, Deserialize};
 
 use combee;
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
 struct Data {
     name: String,
+    age: u32
+}
+
+#[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
+struct InvalidData {
+    name: u32,
     age: u32
 }
 
@@ -48,4 +53,20 @@ fn test_read_basic_csv_data() {
     assert_eq!(*result.index(0), Data {name: String::from("Daniel"), age: 26});
     assert_eq!(*result.index(1), Data {name: String::from("Sergio"), age: 30});
     assert_eq!(*result.index(2), Data {name: String::from("Leticia"), age: 22});
+}
+
+#[test]
+fn test_read_basic_csv_with_invalid_structure() {
+    match combee::read_csv::<InvalidData>(String::from("tests/fixtures/basic.csv")) {
+        Ok(_) => panic!("read_csv should return an error!"),
+        Err(e) => assert!(e.message.contains("string"))
+    };
+}
+
+#[test]
+fn test_read_invalid_csv() {
+    match combee::read_csv::<Data>(String::from("tests/fixtures/invalid.csv")) {
+        Ok(_) => panic!("read_csv should return an error!"),
+        Err(e) => assert!(e.message.contains("string"))
+    }
 }
