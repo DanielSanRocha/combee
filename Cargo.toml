@@ -3,6 +3,7 @@ name = "combee"
 description = "Combee is a flexible data analysis library written in pure Rust inspired by pandas (python)."
 homepage = "https://github.com/DanielSanRocha/combee"
 repository = "https://github.com/DanielSanRocha/combee"
+license-file = "LICENSE"
 version = "0.1.0"
 edition = "2021"
 
