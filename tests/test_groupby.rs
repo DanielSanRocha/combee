@@ -16,6 +16,12 @@ struct Stats<V: Clone + Serialize + PartialEq + Debug> {
     value: V
 }
 
+#[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
+struct Data2 {
+    index: String,
+    value: f64
+}
+
 #[test]
 fn test_unsorted_groupby_count() {
     let df = combee::read_csv::<Data>(String::from("tests/fixtures/unsorted.csv")).unwrap();
@@ -135,4 +141,29 @@ fn test_groupby_groupby_sum() {
     assert_eq!(row_3.index, 3);
     assert!(row_3.value - 1.2 < 0.0001);
     assert!(1.2 - row_3.value < 0.0001);
+}
+
+#[test]
+fn test_groupby_string() {
+    let df = combee::read_csv::<Data2>(String::from("tests/fixtures/groupby_string.csv")).unwrap();
+
+    let df_grouped = df
+        .groupby(|x| x.index.clone())
+        .agg(|index, g| (
+            index.clone(),
+            count(g),
+            mean(g, |x| x.value),
+            sum(g, |x| x.value)
+        ));
+
+    assert_eq!(df_grouped.len(), 3);
+
+    let rowd = df_grouped.find(|x| x.0 == "Daniel").unwrap();
+    assert_eq!(rowd, &(String::from("Daniel"), 3 as usize, 28.6/3.0, 28.6));
+
+    let rows = df_grouped.find(|x| x.0 == "Sergio").unwrap();
+    assert_eq!(rows, &(String::from("Sergio"), 2 as usize, 44.0/2.0, 44.0));
+
+    let rowl = df_grouped.find(|x| x.0 == "Leticia").unwrap();
+    assert_eq!(rowl, &(String::from("Leticia"), 2 as usize, 10.07/2.0, 10.07));
 }
