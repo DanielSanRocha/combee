@@ -3,6 +3,7 @@ use log;
 use csv;
 
 pub mod dataframe;
+pub mod functions;
 pub mod errors;
 
 /// Read a CSV file, the data parameter D must be compatible with the columns of the csv.

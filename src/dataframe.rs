@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::{self, Debug}};
+use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash};
 
 use log;
 use serde::{Serialize, de::DeserializeOwned};
@@ -15,43 +15,15 @@ pub struct SliceDataFrame<'a, D: Clone + DeserializeOwned + Serialize> {
     end: usize
 }
 
-impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
-    fn new(dataframe: &'a DataFrame<D>, start: usize, end: usize) -> Self {
-        log::trace!("Creating a new SliceDataFrame with start: {} and end: {}", start, end);
-        SliceDataFrame { dataframe: dataframe, start: start, end: end }
-    }
-
-    /// Clone the slice into a new DataFrame.
-    pub fn clone(&self) -> DataFrame<D> {
-        log::trace!("Cloning slice of a DataFrame into a new DataFrame...");
-        let data = self.dataframe.data[self.start..self.end].iter().map(|x| x.clone()).collect();
-        DataFrame::new(data)
-    }
-
-    /// Return the size of a SliceDataFrame.
-    pub fn len(&self) -> usize {
-        self.end - self.start
-    }
-
-    /// Take num rows from SliceDataFrame.
-    pub fn take(&self, num: usize) -> Vec<D> {
-        let min_num = std::cmp::min(num, self.len());
-        let data = self.dataframe.data[self.start..(self.start + min_num)].iter().map(|x| x.clone()).collect();
-        data
-    }
+/// A group of rows of a DataFrame.
+pub struct Group<'a, D: Clone + DeserializeOwned + Serialize> {
+    pub(crate) data: slice::Iter::<'a, &'a D>
 }
 
-impl<'a, D: Clone + DeserializeOwned + Serialize + Debug> fmt::Debug for SliceDataFrame<'a, D> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in self.dataframe.data[self.start..self.end].iter() {
-            match write!(f, "{:?}\n", row) {
-                Ok(_) => (),
-                Err(e) => return Err(e)
-            }
-        }
-
-        return Ok(())
-    }
+/// A Grouped DataFrame, you can use a aggregator function to get a DataFrame.
+pub struct GroupedDataFrame<'a, D: Clone + DeserializeOwned + Serialize, I: Eq + Hash + Clone, F> where F: Fn(&D) -> I {
+    dataframe: &'a DataFrame<D>,
+    index: F
 }
 
 impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
@@ -122,5 +94,96 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
         });
 
         DataFrame::new(new_data)
+    }
+
+    /// Group DataFrame by index function.
+    pub fn groupby<F,I: Eq + Hash + Clone>(&self, index: F) -> GroupedDataFrame<'_, D, I, F> where F: Fn(&D) -> I {
+        GroupedDataFrame::new(self, index)
+    }
+
+    /// Find a row in the dataframe given a condition.
+    pub fn find<F>(&self, condition: F) -> Option<&D> where F: Fn(&D) -> bool {
+        for row in self.data[0..self.len()].into_iter() {
+            if condition(row) {
+                return Some(row);
+            }
+        }
+        return None;
+    }
+}
+
+
+impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
+    fn new(dataframe: &'a DataFrame<D>, start: usize, end: usize) -> Self {
+        log::trace!("Creating a new SliceDataFrame with start: {} and end: {}", start, end);
+        SliceDataFrame { dataframe: dataframe, start: start, end: end }
+    }
+
+    /// Clone the slice into a new DataFrame.
+    pub fn clone(&self) -> DataFrame<D> {
+        log::trace!("Cloning slice of a DataFrame into a new DataFrame...");
+        let data = self.dataframe.data[self.start..self.end].iter().map(|x| x.clone()).collect();
+        DataFrame::new(data)
+    }
+
+    /// Return the size of a SliceDataFrame.
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
+
+    /// Take num rows from SliceDataFrame.
+    pub fn take(&self, num: usize) -> Vec<D> {
+        let min_num = std::cmp::min(num, self.len());
+        let data = self.dataframe.data[self.start..(self.start + min_num)].iter().map(|x| x.clone()).collect();
+        data
+    }
+
+    /// Find a row in the slice of a dataframe given a condition.
+    pub fn find<F>(&self, condition: F) -> Option<&D> where F: Fn(&D) -> bool {
+        for row in self.dataframe.data[self.start..self.end].into_iter() {
+            if condition(row) {
+                return Some(row);
+            }
+        }
+        return None;
+    }
+}
+
+impl<'a, D: Clone + DeserializeOwned + Serialize + Debug> fmt::Debug for SliceDataFrame<'a, D> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for row in self.dataframe.data[self.start..self.end].iter() {
+            match write!(f, "{:?}\n", row) {
+                Ok(_) => (),
+                Err(e) => return Err(e)
+            }
+        }
+
+        return Ok(())
+    }
+}
+
+impl<'a,D: Clone + DeserializeOwned + Serialize, I: Eq + Clone + Hash, F> GroupedDataFrame<'a, D, I, F> where F: Fn(&D) -> I {
+    fn new(df: &'a DataFrame<D>, index: F) -> Self {
+        GroupedDataFrame { dataframe: df, index: index }
+    }
+
+    /// Aggregates a GroupedDataFrame in a new DataFrame using a aggregator function.
+    pub fn agg<S: Clone + DeserializeOwned + Serialize, G>(&self, aggregator: G) -> DataFrame<S> where G: Fn(&I, &Group<D>) -> S {
+        let mut hashmap: HashMap<I, Vec<&'a D>> = HashMap::new();
+
+        for row in self.dataframe.data.iter() {
+            let ind = (self.index)(&row);
+            match hashmap.get_mut(&ind) {
+                Some(group) => group.push(row),
+                None => {
+                    let mut v = Vec::new();
+                    v.push(row);
+                    hashmap.insert(ind, v);
+                },
+            }
+        };
+
+        let data = hashmap.iter().map(|(ind, group)| aggregator(ind, &Group { data: group.iter() })).collect();
+        DataFrame::new(data)
     }
 }
