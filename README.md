@@ -16,6 +16,15 @@ cargo add combee
 
 1) Below an example of loading a CSV file, filtering the dataset, and applying a function to each row:
 
+(dataset.csv)
+```csv
+name,age
+Daniel,26
+Sergio,30
+Leticia,22
+```
+
+(main.rs)
 ```rust
 use std::fmt::Display;
 use serde::{Serialize, Deserialize};
@@ -50,6 +59,33 @@ fn main() {
 }
 ```
 
+2) An example of groupby with aggregation
+
+(main.rs)
+```rust
+use serde::{Serialize, Deserialize};
+
+use combee;
+use combee::functions::{mean, sum, count};
+
+#[derive(Clone, Deserialize, Serialize)]
+struct Data {
+    name: String,
+    age: u32
+}
+
+fn main() {
+    let df = combee::read_csv::<Data>(String::from("dataset.csv")).unwrap();
+
+    let stats = df.groupby(|_| 1).agg(|_, g|
+        (count(g), mean(g, |x| x.age), sum(g, |x| x.age))
+    ).head(1);
+
+    println("{:?}", stats);
+}
+```
+
 ## Acknowledgments
 
-Made with Love by Daniel Santana
+Daniel Santana: Made with Love.\
+ali5h: Code to deserialize parquet row [link](https://github.com/ali5h/serde-parquet).
