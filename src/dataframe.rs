@@ -1,7 +1,9 @@
 use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash};
-
 use log;
 use serde::{Serialize, de::DeserializeOwned};
+use csv;
+
+use crate::errors;
 
 /// A DataFrame is the main data structure of combee.
 pub struct DataFrame<D: Clone + DeserializeOwned + Serialize> {
@@ -28,7 +30,7 @@ pub struct GroupedDataFrame<'a, D: Clone + DeserializeOwned + Serialize, I: Eq +
 
 impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     /// Instatiante a new DataFrame.
-    pub(crate) fn new(data: Vec<D>) -> Self {
+    pub fn new(data: Vec<D>) -> Self {
         log::trace!("Creating new DataFrame...");
         DataFrame { data: data }
     }
@@ -109,6 +111,26 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
             }
         }
         return None;
+    }
+
+    /// Save a DataFrame as a CSV file.
+    pub fn to_csv(&self, path: String) -> Result<(),errors::Error> {
+        let mut writer = match csv::Writer::from_path(path) {
+            Ok(w) => w,
+            Err(e) => return Err(errors::Error { message: e.to_string() })
+        };
+
+        for row in self.data.clone() {
+            match writer.serialize(&row) {
+                Ok(_) => (),
+                Err(e) => return Err(errors::Error {message: e.to_string() })
+            };
+        }
+
+        match writer.flush() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(errors::Error { message: e.to_string() })
+        }
     }
 }
 
