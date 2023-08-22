@@ -1,5 +1,6 @@
-use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash};
+use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash, path::Path, fs::File};
 use log;
+use parquet::file::writer::SerializedFileWriter;
 use serde::{Serialize, de::DeserializeOwned};
 use csv;
 
@@ -115,13 +116,15 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
 
     /// Save a DataFrame as a CSV file.
     pub fn to_csv(&self, path: String) -> Result<(),errors::Error> {
+        log::debug!("Saving DataFrame to CSV file at path: {}", path);
+
         let mut writer = match csv::Writer::from_path(path) {
             Ok(w) => w,
             Err(e) => return Err(errors::Error { message: e.to_string() })
         };
 
-        for row in self.data.clone() {
-            match writer.serialize(&row) {
+        for row in self.data[0..self.len()].into_iter() {
+            match writer.serialize(row) {
                 Ok(_) => (),
                 Err(e) => return Err(errors::Error {message: e.to_string() })
             };
@@ -130,6 +133,37 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
         match writer.flush() {
             Ok(_) => Ok(()),
             Err(e) => Err(errors::Error { message: e.to_string() })
+        }
+    }
+
+    /// Save a DataFrame as a Parquet file.
+    pub fn to_parquet(&self, path: String) -> Result<(), errors::Error> {
+        log::debug!("Saving DataFrame to Parquet file at path: {}", path);
+        let p: &Path = Path::new(&path);
+
+        if let Ok(file) = File::open(p) {
+            let writer = match SerializedFileWriter::new(file, schema, properties) {
+                Ok(w) => w,
+                Err(e) => return Err(errors::Error { message: e.to_string() })
+            };
+
+            let row_group = match writer.next_row_group() {
+                Ok(rg) => rg,
+                Err(e) => return Err(errors::Error { message: e.to_string() })
+            };
+
+            match row_group.close() {
+                Ok(_) => (),
+                Err(e) => return Err(errors::Error { message: e.to_string() })
+            };
+
+            match writer.close() {
+                Ok(_) => Ok(()),
+                Err(e) => Err(errors::Error { message: e.to_string() })
+            }
+
+        } else {
+            Err(errors::Error { message: format!("Could not open file {}", path) })
         }
     }
 }
@@ -168,6 +202,31 @@ impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
             }
         }
         return None;
+    }
+
+    /// Save a SliceDataFrame to a CSV file.
+    pub fn to_csv(&self, path: String) -> Result<(),errors::Error> {
+        let mut writer = match csv::Writer::from_path(path) {
+            Ok(w) => w,
+            Err(e) => return Err(errors::Error { message: e.to_string() })
+        };
+
+        for row in self.dataframe.data[self.start..self.end].into_iter() {
+            match writer.serialize(row) {
+                Ok(_) => (),
+                Err(e) => return Err(errors::Error {message: e.to_string() })
+            };
+        }
+
+        match writer.flush() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(errors::Error { message: e.to_string() })
+        }
+    }
+
+    /// Save a SliceDataFrame as a Parquet file.
+    pub fn to_parquet(&self, path: String) -> Result<(), errors::Error> {
+        Ok(())
     }
 }
 

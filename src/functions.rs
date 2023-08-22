@@ -32,3 +32,8 @@ pub fn count<D: Clone + Serialize + DeserializeOwned>(group: &Group<D>) -> usize
     }
     count
 }
+
+/// Groupby function that group all rows together.
+pub fn all<D: Clone + Serialize + DeserializeOwned>(_: &D) -> usize {
+    1
+}

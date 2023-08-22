@@ -2,7 +2,7 @@
 
 <img src="assets/combee.jpg" height="300" width="600"/>
 
-Combee is a flexible data analysis library written in pure Rust inspired by pandas (python).
+Combee is a strong typed data analysis library written in pure Rust inspired by pandas (python).
 
 ## Installation
 
@@ -66,7 +66,7 @@ fn main() {
 use serde::{Serialize, Deserialize};
 
 use combee;
-use combee::functions::{mean, sum, count};
+use combee::functions::{mean, sum, count, all};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct Data {
@@ -77,7 +77,7 @@ struct Data {
 fn main() {
     let df = combee::read_csv::<Data>(String::from("dataset.csv")).unwrap();
 
-    let stats = df.groupby(|_| 1).agg(|_, g|
+    let stats = df.groupby(all).agg(|_, g|
         (count(g), mean(g, |x| x.age), sum(g, |x| x.age))
     ).head(1);
 
@@ -87,5 +87,5 @@ fn main() {
 
 ## Acknowledgments
 
-Daniel Santana: Made with Love.\
+Daniel Santana: Made with Love 💗.\
 ali5h: Code to deserialize parquet row [link](https://github.com/ali5h/serde-parquet).

@@ -13,3 +13,7 @@ test:   ## Run integration tests
 
 upload: ## Upload version to crates.io
 	cargo upload
+
+doc: ## Generate and open local documentation
+	cargo doc
+	xdg-open target/doc/combee/index.html

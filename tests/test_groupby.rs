@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use serde::{Serialize, Deserialize};
 
 use combee;
-use combee::functions::{count, mean, sum};
+use combee::functions::{count, mean, sum, all};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
 struct Data {
@@ -167,3 +167,22 @@ fn test_groupby_string() {
     let rowl = df_grouped.find(|x| x.0 == "Leticia").unwrap();
     assert_eq!(rowl, &(String::from("Leticia"), 2 as usize, 10.07/2.0, 10.07));
 }
+
+#[test]
+fn test_groupby_all() {
+    let df = combee::read_csv::<Data2>(String::from("tests/fixtures/groupby_string.csv")).unwrap();
+
+    let df_grouped = df.groupby(all).agg(|_,g| (
+        count(g),
+        mean(g, |x| x.value),
+        sum(g, |x| x.value)
+    ));
+
+    assert_eq!(df_grouped.len(), 1);
+    let row = df_grouped.find(|_| true).unwrap();
+
+    assert_eq!(row.0, 7);
+    assert_eq!(row.1, 82.67/7.0);
+    assert_eq!(row.2, 82.67)
+}
+
