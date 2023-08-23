@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use combee::{dataframe::DataFrame, read_csv, read_parquet};
+use combee::{dataframe::DataFrame, read_parquet};
 
 #[derive(Clone, Serialize, Deserialize)]
 struct C {

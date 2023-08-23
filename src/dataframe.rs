@@ -1,6 +1,8 @@
 use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash, path::Path, fs::File};
+extern crate alloc;
+use alloc::sync::Arc;
 use log;
-use parquet::file::writer::SerializedFileWriter;
+use parquet::file::{writer::SerializedFileWriter, properties::WriterProperties};
 use serde::{Serialize, de::DeserializeOwned};
 use csv;
 
@@ -142,7 +144,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
         let p: &Path = Path::new(&path);
 
         if let Ok(file) = File::open(p) {
-            let writer = match SerializedFileWriter::new(file, schema, properties) {
+            let writer = match SerializedFileWriter::new(file, todo!(), Arc::new(WriterProperties::new())) {
                 Ok(w) => w,
                 Err(e) => return Err(errors::Error { message: e.to_string() })
             };
@@ -151,6 +153,8 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
                 Ok(rg) => rg,
                 Err(e) => return Err(errors::Error { message: e.to_string() })
             };
+
+            todo!();
 
             match row_group.close() {
                 Ok(_) => (),
@@ -226,7 +230,7 @@ impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
 
     /// Save a SliceDataFrame as a Parquet file.
     pub fn to_parquet(&self, path: String) -> Result<(), errors::Error> {
-        Ok(())
+        todo!();
     }
 }
 

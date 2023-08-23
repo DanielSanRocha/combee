@@ -100,3 +100,8 @@ pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Re
         return Err(errors::Error { message: format!("Could not open file {}", path) })
     }
 }
+
+/// Returns a list of string with the columns of a given CSV.
+pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
+    todo!();
+}

@@ -14,7 +14,9 @@ cargo add combee
 
 ## Examples
 
-1) Below an example of loading a CSV file, filtering the dataset, and applying a function to each row:
+1) Check the notebook using evcxr_jupyter on [notebooks/analysis.ipynb](notebooks/analysis.ipynb) to an example of analysis of dataset.
+
+2) Below an example of loading a CSV file, filtering the dataset, and applying a function to each row:
 
 (dataset.csv)
 ```csv
@@ -26,10 +28,8 @@ Leticia,22
 
 (main.rs)
 ```rust
-use std::fmt::Display;
 use serde::{Serialize, Deserialize};
-
-use combee;
+use combee::{read_csv, dataframe::DataFrame};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct Data {
@@ -37,26 +37,13 @@ struct Data {
     age: u32
 }
 
-#[derive(Clone, Deserialize, Serialize)]
-struct Message {
-    message: String
-}
+let df = read_csv::<Data>(String::from("../tests/fixtures/basic.csv")).unwrap();
+let df_filtered: DataFrame<Data> = df.filter(|row| row.age < 27);
+let df_message: DataFrame<String> = df_filtered.apply(|row| format!("Hello {} with {} years!", row.name, row.age));
+let messages = df_message.take(2);
 
-impl Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-fn main() {
-    let df = combee::read_csv::<Data>(String::from("dataset.csv")).unwrap();
-    let df_filtered = df.filter(|row| row.age < 27);
-    let df_message = df_filtered.apply(|row| Message { message: format!("Hello {} with {} years!", row.name, row.age)});
-    let messages = df_message.take(2);
-
-    println!("{}", messages[0]);
-    println!("{}", messages[1]);
-}
+println!("{}", messages[0]);
+println!("{}", messages[1]);
 ```
 
 2) An example of groupby with aggregation
@@ -64,9 +51,7 @@ fn main() {
 (main.rs)
 ```rust
 use serde::{Serialize, Deserialize};
-
-use combee;
-use combee::functions::{mean, sum, count, all};
+use combee::{read_csv, functions::{mean, sum, count, all}};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct Data {
@@ -75,7 +60,7 @@ struct Data {
 }
 
 fn main() {
-    let df = combee::read_csv::<Data>(String::from("dataset.csv")).unwrap();
+    let df = read_csv::<Data>(String::from("dataset.csv")).unwrap();
 
     let stats = df.groupby(all).agg(|_, g|
         (count(g), mean(g, |x| x.age), sum(g, |x| x.age))
