@@ -8,7 +8,7 @@
 //! 2. [function@read_parquet] for reading parquet files.
 
 use std::{path::Path, fs::File, io::{BufRead, BufReader}};
-use parquet::{file::serialized_reader::SerializedFileReader};
+use parquet::{file::serialized_reader::SerializedFileReader, arrow::arrow_reader::ParquetRecordBatchReaderBuilder};
 use serde::{Serialize, de::DeserializeOwned};
 use log;
 use csv;
@@ -39,8 +39,11 @@ mod parquet_deserializer;
 /// ```
 /// We can load this file using combee:
 /// ```
-/// use combee;
+/// use combee::{read_csv, read_csv_schema};
 /// use serde::{Serialize, Deserialize};
+///
+/// let columns = read_csv_schema("dataset.csv".to_string()).unwrap();
+/// println!("{}", columns.join(",")); // Print the columns names to facilitate the creation of the struct.
 ///
 ///  #[derive(Clone, Serialize, Deserialize)]
 ///  struct D {
@@ -48,7 +51,7 @@ mod parquet_deserializer;
 ///     age: usize
 /// }
 ///
-/// let df = combee::read_csv::<D>("dataset.csv".to_string()).unwrap();
+/// let df = read_csv::<D>("dataset.csv".to_string()).unwrap();
 /// ```
 pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result<dataframe::DataFrame<D>, errors::Error> {
     log::debug!("Reading CSV at path '{}'", path);
@@ -74,6 +77,28 @@ pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result
 }
 
 /// Read an Apache Parquet file, the data parameter D must be compatible with the columns of the parquet.
+/// ```
+/// use combee::{read_parquet_schema, read_parquet};
+/// use serde::{Serialize, Deserialize};
+///
+/// let schema = read_parquet_schema("complex.parquet".to_string()).unwrap();
+/// println!("{}", schema); // Print the schema so you can construct the struct to hold the data
+///
+/// #[derive(Clone, Serialize, Deserialize)]
+/// struct C {
+///     b: bool,
+///     x: f32,
+///     y: Vec<f32>
+/// }
+///
+/// #[derive(Clone, Serialize, Deserialize)]
+/// struct D {
+///     index: String,
+///     childrens: Vec<C>
+/// }
+///
+/// let df = read_parquet::<D>("complex.parquet".to_string()).unwrap();
+/// ```
 pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result<dataframe::DataFrame<D>, errors::Error> {
     log::debug!("Reading Parquet at path '{}'", path);
     let p: &Path = Path::new(&path);
@@ -104,6 +129,13 @@ pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Re
 }
 
 /// Returns a list of string with the columns of a given CSV.
+/// Example:
+/// ```
+/// use combee::read_csv_schema;
+///
+/// let columns = read_csv_schema("dataset.csv".to_string()).unwrap();
+/// println!("{}", columns.join(","));
+/// ```
 pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
     let file = match File::open(&path) {
         Ok(f) => f,
@@ -119,4 +151,25 @@ pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
     };
 
     Ok(first_line.trim().split(",").map(|x| String::from(x)).collect())
+}
+
+/// Returns the schema of a parquet as a string.
+/// Example:
+/// ```
+/// use combee::read_parquet_schema;
+///
+/// println!("{}", read_parquet_schema("complex.parquet".to_string()).unwrap());
+/// ```
+pub fn read_parquet_schema(path: String) -> Result<String, errors::Error> {
+    let file = match File::open(&path) {
+        Ok(f) => f,
+        Err(e) => return Err(errors::Error { message: e.to_string() })
+    };
+
+    let builder = match ParquetRecordBatchReaderBuilder::try_new(file) {
+        Ok(b) => b,
+        Err(e) => return Err(errors::Error { message: e.to_string() })
+    };
+
+    Ok(format!("{}", builder.schema()))
 }
