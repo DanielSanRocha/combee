@@ -2,3 +2,4 @@
 target/
 tmp/*.csv
 tmp/*.parquet
+notebooks/datasets/anime_filtered.parquet
