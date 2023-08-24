@@ -18,3 +18,4 @@ log = "0"
 parquet = "45"
 serde = { version = "1", features = ["derive"] }
 serde_arrow = { version = "0.7.1", features=["arrow2-0-17"] }
+time = "0.3.27"

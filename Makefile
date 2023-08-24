@@ -12,7 +12,7 @@ test:   ## Run integration tests
 	cargo test
 
 upload: ## Upload version to crates.io
-	cargo upload
+	cargo publish
 
 doc: ## Generate and open local documentation
 	cargo doc
