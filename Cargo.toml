@@ -12,7 +12,9 @@ include = [
 ]
 
 [dependencies]
+arrow2 = { version = "0.17.4", features = ["io_parquet"] }
 csv = "1"
 log = "0"
 parquet = "45"
 serde = { version = "1", features = ["derive"] }
+serde_arrow = { version = "0.7.1", features=["arrow2-0-17"] }

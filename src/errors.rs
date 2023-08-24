@@ -1,5 +1,5 @@
 use std::{fmt::Display, self};
-use serde::de;
+use serde::{de, ser};
 
 /// Generic Error type.
 #[derive(Debug)]
@@ -21,5 +21,11 @@ impl std::error::Error for Error {
 impl de::Error for Error {
     fn custom<T>(msg:T) -> Self where T:Display {
         Error { message: format!("{}", msg) }
+    }
+}
+
+impl ser::Error for Error {
+    fn custom<T>(msg:T) -> Self where T:Display {
+        Error {message: format!("{}", msg)}
     }
 }

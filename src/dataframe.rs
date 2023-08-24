@@ -1,10 +1,13 @@
-use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash, path::Path, fs::File};
+use std::{cmp::{Ordering, Eq}, fmt::{self, Debug}, slice, collections::HashMap, hash::Hash};
 extern crate alloc;
-use alloc::sync::Arc;
 use log;
-use parquet::file::{writer::SerializedFileWriter, properties::WriterProperties};
 use serde::{Serialize, de::DeserializeOwned};
 use csv;
+use serde_arrow::{schema::TracingOptions, arrow2::{serialize_into_arrays, serialize_into_fields}};
+use arrow2::{chunk::Chunk, datatypes::Schema, array::Array, self, io::parquet::write::{transverse, CompressionOptions, Encoding, FileWriter, RowGroupIterator, Version, WriteOptions}};
+
+use std::fs::File;
+
 
 use crate::errors;
 
@@ -141,35 +144,53 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     /// Save a DataFrame as a Parquet file.
     pub fn to_parquet(&self, path: String) -> Result<(), errors::Error> {
         log::debug!("Saving DataFrame to Parquet file at path: {}", path);
-        let p: &Path = Path::new(&path);
 
-        if let Ok(file) = File::open(p) {
-            let writer = match SerializedFileWriter::new(file, todo!(), Arc::new(WriterProperties::new())) {
-                Ok(w) => w,
-                Err(e) => return Err(errors::Error { message: e.to_string() })
-            };
+        let schema = match serialize_into_fields(&self.data, TracingOptions::default()) {
+            Ok(s) => s,
+            Err(e) => return Err(errors::Error { message: e.to_string() })
+        };
 
-            let row_group = match writer.next_row_group() {
-                Ok(rg) => rg,
-                Err(e) => return Err(errors::Error { message: e.to_string() })
-            };
+        let arrays = match serialize_into_arrays(&schema, &self.data) {
+            Ok(a) => a,
+            Err(e) => return Err(errors::Error { message: e.to_string() })
+        };
 
-            todo!();
-
-            match row_group.close() {
-                Ok(_) => (),
-                Err(e) => return Err(errors::Error { message: e.to_string() })
-            };
-
-            match writer.close() {
-                Ok(_) => Ok(()),
-                Err(e) => Err(errors::Error { message: e.to_string() })
-            }
-
-        } else {
-            Err(errors::Error { message: format!("Could not open file {}", path) })
+        match write_chunk_parquet(&path, Schema::from(schema), Chunk::new(arrays)) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(errors::Error { message: "Error saving parquet!".to_string() })
         }
     }
+}
+
+
+fn write_chunk_parquet(path: &str, schema: Schema, chunk: Chunk<Box<dyn Array>>) -> arrow2::error::Result<()> {
+    let options = WriteOptions {
+        write_statistics: false,
+        compression: CompressionOptions::Uncompressed,
+        version: Version::V2,
+        data_pagesize_limit: None
+    };
+
+    let iter = vec![Ok(chunk)];
+
+    let encodings = schema
+        .fields
+        .iter()
+        .map(|f| transverse(&f.data_type, |_| Encoding::Plain))
+        .collect();
+
+    let row_groups = RowGroupIterator::try_new(iter.into_iter(), &schema, options, encodings)?;
+
+    // Create a new empty file
+    let file = File::create(path)?;
+
+    let mut writer = FileWriter::try_new(file, schema, options)?;
+
+    for group in row_groups {
+        writer.write(group?)?;
+    }
+    let _size = writer.end(None)?;
+    Ok(())
 }
 
 
@@ -230,7 +251,7 @@ impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
 
     /// Save a SliceDataFrame as a Parquet file.
     pub fn to_parquet(&self, path: String) -> Result<(), errors::Error> {
-        todo!();
+        self.clone().to_parquet(path)
     }
 }
 

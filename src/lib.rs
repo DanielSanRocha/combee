@@ -7,7 +7,7 @@
 //!
 //! 2. [function@read_parquet] for reading parquet files.
 
-use std::{path::Path, fs::File};
+use std::{path::Path, fs::File, io::{BufRead, BufReader}};
 use parquet::{file::serialized_reader::SerializedFileReader};
 use serde::{Serialize, de::DeserializeOwned};
 use log;
@@ -40,13 +40,15 @@ mod parquet_deserializer;
 /// We can load this file using combee:
 /// ```
 /// use combee;
+/// use serde::{Serialize, Deserialize};
 ///
+///  #[derive(Clone, Serialize, Deserialize)]
 ///  struct D {
 ///     name: String,
 ///     age: usize
 /// }
 ///
-/// let df = combee::read_csv::<D>("dataset.csv");
+/// let df = combee::read_csv::<D>("dataset.csv".to_string()).unwrap();
 /// ```
 pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result<dataframe::DataFrame<D>, errors::Error> {
     log::debug!("Reading CSV at path '{}'", path);
@@ -103,5 +105,18 @@ pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Re
 
 /// Returns a list of string with the columns of a given CSV.
 pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
-    todo!();
+    let file = match File::open(&path) {
+        Ok(f) => f,
+        Err(_) => return Err(errors::Error { message: format!("Could not open CSV file at path {}!", path) })
+    };
+
+    let mut buffer = BufReader::new(file);
+    let mut first_line = String::new();
+
+    match buffer.read_line(&mut first_line) {
+        Ok(_) => (),
+        Err(_) => return Err(errors::Error { message: format!("Could not read first line of CSV file at path {}", path) })
+    };
+
+    Ok(first_line.trim().split(",").map(|x| String::from(x)).collect())
 }
