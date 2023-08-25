@@ -1,4 +1,5 @@
 //! This crate contains combee: a strong typed data analysis library implemented in pure Rust.
+//! Check the github page for notebooks (using evcxr_jupyter) using combee: <https://github.com/DanielSanRocha/combee>.
 //!
 //! # Getting Started
 //! Start with some examples:
@@ -6,7 +7,11 @@
 //! 1. [function@read_csv] for reading csv files.
 //!
 //! 2. [function@read_parquet] for reading parquet files.
-
+//!
+//! 3. [dataframe::DataFrame::groupby] for grouping rows together.
+//!
+//! 4. [function@functions::mean] for calculating average value of group of rows.
+//!
 use std::{path::Path, fs::File, io::{BufRead, BufReader}};
 use parquet::{file::serialized_reader::SerializedFileReader, arrow::arrow_reader::ParquetRecordBatchReaderBuilder};
 use serde::{Serialize, de::DeserializeOwned};

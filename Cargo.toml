@@ -4,7 +4,7 @@ description = "Combee is a flexible data analysis library written in pure Rust i
 homepage = "https://github.com/DanielSanRocha/combee"
 repository = "https://github.com/DanielSanRocha/combee"
 license-file = "LICENSE"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 include = [
     "**/*.rs",
@@ -15,7 +15,7 @@ include = [
 arrow2 = { version = "0.17", features = ["io_parquet"] }
 csv = "1"
 log = "0"
-parquet = "45"
+parquet = "46"
 serde = { version = "1", features = ["derive"] }
-serde_arrow = { version = "0.7.1", features=["arrow2-0-17"] }
+serde_arrow = { version = "0.7", features=["arrow2-0-17"] }
 time = "0.3"

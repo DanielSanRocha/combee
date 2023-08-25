@@ -16,4 +16,5 @@ upload: ## Upload version to crates.io
 
 doc: ## Generate and open local documentation
 	cargo doc
-	xdg-open target/doc/combee/index.html
+	xdg-open target/doc/combee/index.html || true
+	open target/doc/combee/index.html || true

@@ -105,11 +105,34 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     }
 
     /// Group DataFrame by index function.
+    /// Example:
+    /// ```
+    /// use combee::{dataframe::DataFrame, functions::{mean}};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Clone, Serialize, Deserialize)]
+    /// struct D {
+    ///     x: usize,
+    ///     value: f64
+    /// }
+    ///
+    /// let df = DataFrame::new(vec![
+    ///     D {x: 0, value: 0.1},
+    ///     D {x: 0, value: -0.2},
+    ///     D {x: 12, value: 3.2},
+    ///     D {x: 3, value: 4.5},
+    ///     D {x: 12, value: 0.0}
+    /// ]);
+    ///
+    /// println!("{:?}", df.groupby(|d| d.x).agg(|index, g|
+    ///     (*index, mean(g, |d| d.value))
+    /// ).head(10))
+    /// ```
     pub fn groupby<F,I: Eq + Hash + Clone>(&self, index: F) -> GroupedDataFrame<'_, D, I, F> where F: Fn(&D) -> I {
         GroupedDataFrame::new(self, index)
     }
 
-    /// Find a row in the dataframe given a condition.
+    /// Find a row in the dataframe that matches a condition.
     pub fn find<F>(&self, condition: F) -> Option<&D> where F: Fn(&D) -> bool {
         for row in self.data[0..self.len()].into_iter() {
             if condition(row) {
