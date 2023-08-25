@@ -3,6 +3,7 @@ extern crate alloc;
 use log;
 use serde::{Serialize, de::DeserializeOwned};
 use csv;
+use rand::seq::SliceRandom;
 use serde_arrow::{schema::TracingOptions, arrow2::{serialize_into_arrays, serialize_into_fields}};
 use arrow2::{chunk::Chunk, datatypes::Schema, array::Array, self, io::parquet::write::{transverse, CompressionOptions, Encoding, FileWriter, RowGroupIterator, Version, WriteOptions}};
 
@@ -142,6 +143,34 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
         return None;
     }
 
+    /// Split a DataFrame.
+    /// Example:
+    /// ```
+    /// use combee::dataframe::{DataFrame, concat};
+    ///
+    /// let df = DataFrame::new(vec![32,13,4,5,89,32,42,13]);
+    ///
+    /// let (df1, df2) = df.split(0.3);
+    ///
+    /// assert_eq!(df1.len(), 6);
+    /// assert_eq!(df2.len(), 2);
+    ///
+    /// let new_df = concat(&[df1,df2]);
+    ///
+    /// assert_eq!(new_df.len(), 8);
+    /// ```
+    pub fn split(&self, frac: f64) -> (Self, Self) {
+        let amount = (frac * self.len() as f64).floor() as usize;
+
+        let mut new_data = self.data.clone();
+        new_data.shuffle(&mut rand::thread_rng());
+
+        let data1: Vec<D> = new_data[0..amount].iter().map(|x| x.clone()).collect();
+        let data2: Vec<D> = new_data[amount..self.len()].iter().map(|x| x.clone()).collect();
+
+        (DataFrame::new(data2), DataFrame::new(data1))
+    }
+
     /// Save a DataFrame as a CSV file.
     pub fn to_csv(&self, path: String) -> Result<(),errors::Error> {
         log::debug!("Saving DataFrame to CSV file at path: {}", path);
@@ -216,6 +245,32 @@ fn write_chunk_parquet(path: &str, schema: Schema, chunk: Chunk<Box<dyn Array>>)
     Ok(())
 }
 
+/// Concat a array of DataFrames in a new DataFrame.
+/// Split a DataFrame.
+/// Example:
+/// ```
+/// use combee::dataframe::{DataFrame, concat};
+///
+/// let df = DataFrame::new(vec![32,13,4,5,89,32,42,13]);
+///
+/// let (df1, df2) = df.split(0.3);
+///
+/// assert_eq!(df1.len(), 6);
+/// assert_eq!(df2.len(), 2);
+///
+/// let new_df = concat(&[df1,df2]);
+///
+/// assert_eq!(new_df.len(), 8);
+/// ```
+pub fn concat<D: Serialize + DeserializeOwned + Clone>(dfs: &[DataFrame<D>]) -> DataFrame<D> {
+    let mut data = vec![];
+
+    for df in dfs {
+        data.append(&mut df.data.clone());
+    }
+
+    DataFrame::new(data)
+}
 
 impl<'a, D: Clone + DeserializeOwned + Serialize> SliceDataFrame<'a, D> {
     fn new(dataframe: &'a DataFrame<D>, start: usize, end: usize) -> Self {
