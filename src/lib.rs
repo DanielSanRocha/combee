@@ -33,6 +33,9 @@ pub mod dataframe;
 /// Contains useful functions (aggregation functions, groupby functions...).
 pub mod functions;
 
+/// Neural Network module
+pub mod nn;
+
 /// Error module.
 pub mod errors;
 

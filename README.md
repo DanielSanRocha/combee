@@ -2,7 +2,7 @@
 
 <img src="assets/combee.jpg" height="300" width="600"/>
 
-Combee is a strong typed data analysis library written in pure Rust inspired by pandas (python).
+Combee is a strong typed data analysis and neural netowkr library written in pure Rust inspired by pandas and keras (python).
 
 ## Installation
 
