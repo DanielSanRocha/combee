@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use serde::{Serialize, Deserialize};
 
 use combee;
-use combee::functions::{count, mean, sum, all};
+use combee::functions::{count, avg, sum, all};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
 struct Data {
@@ -56,9 +56,9 @@ fn test_unsorted_groupby_sum() {
 }
 
 #[test]
-fn test_unsorted_groupby_mean() {
+fn test_unsorted_groupby_avg() {
     let df = combee::read_csv::<Data>(String::from("tests/fixtures/unsorted.csv")).unwrap();
-    let df_grouped = df.groupby(|_| 1).agg(|index, g| Stats { index: *index, value: mean(g, |x| x.age as f64)});
+    let df_grouped = df.groupby(|_| 1).agg(|index, g| Stats { index: *index, value: avg(g, |x| x.age as f64)});
 
     assert_eq!(df_grouped.len(), 1);
 
@@ -69,12 +69,12 @@ fn test_unsorted_groupby_mean() {
 }
 
 #[test]
-fn test_groupby_groupby_mean() {
+fn test_groupby_groupby_avg() {
     let df = combee::read_csv::<Stats<f64>>(String::from("tests/fixtures/groupby.csv")).unwrap();
 
     let df_grouped = df
         .groupby(|x| x.index)
-        .agg(|index, group| Stats { index: *index, value: mean(group, |x| x.value) });
+        .agg(|index, group| Stats { index: *index, value: avg(group, |x| x.value) });
 
     assert_eq!(df_grouped.len(), 3);
 
@@ -152,7 +152,7 @@ fn test_groupby_string() {
         .agg(|index, g| (
             index.clone(),
             count(g),
-            mean(g, |x| x.value),
+            avg(g, |x| x.value),
             sum(g, |x| x.value)
         ));
 
@@ -174,7 +174,7 @@ fn test_groupby_all() {
 
     let df_grouped = df.groupby(all).agg(|_,g| (
         count(g),
-        mean(g, |x| x.value),
+        avg(g, |x| x.value),
         sum(g, |x| x.value)
     ));
 

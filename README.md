@@ -51,7 +51,7 @@ println!("{}", messages[1]);
 (main.rs)
 ```rust
 use serde::{Serialize, Deserialize};
-use combee::{read_csv, functions::{mean, sum, count, all}};
+use combee::{read_csv, functions::{avg, sum, count, all}};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct Data {
@@ -63,7 +63,7 @@ fn main() {
     let df = read_csv::<Data>(String::from("dataset.csv")).unwrap();
 
     let stats = df.groupby(all).agg(|_, g|
-        (count(g), mean(g, |x| x.age), sum(g, |x| x.age))
+        (count(g), avg(g, |x| x.age), sum(g, |x| x.age))
     ).head(1);
 
     println("{:?}", stats);

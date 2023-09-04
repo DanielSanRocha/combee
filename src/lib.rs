@@ -10,7 +10,7 @@
 //!
 //! 3. [dataframe::DataFrame::groupby] for grouping rows together.
 //!
-//! 4. [function@functions::mean] for calculating average value of group of rows.
+//! 4. [function@functions::avg] for calculating average value of group of rows.
 //!
 use std::{path::Path, fs::File, io::{BufRead, BufReader}};
 use parquet::{file::serialized_reader::SerializedFileReader, arrow::arrow_reader::ParquetRecordBatchReaderBuilder};

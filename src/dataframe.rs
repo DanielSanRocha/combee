@@ -108,7 +108,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     /// Group DataFrame by index function.
     /// Example:
     /// ```
-    /// use combee::{dataframe::DataFrame, functions::{mean}};
+    /// use combee::{dataframe::DataFrame, functions::avg};
     /// use serde::{Serialize, Deserialize};
     ///
     /// #[derive(Clone, Serialize, Deserialize)]
@@ -126,7 +126,7 @@ impl<D: Clone + DeserializeOwned + Serialize> DataFrame<D> {
     /// ]);
     ///
     /// println!("{:?}", df.groupby(|d| d.x).agg(|index, g|
-    ///     (*index, mean(g, |d| d.value))
+    ///     (*index, avg(g, |d| d.value))
     /// ).head(10))
     /// ```
     pub fn groupby<F,I: Eq + Hash + Clone>(&self, index: F) -> GroupedDataFrame<'_, D, I, F> where F: Fn(&D) -> I {

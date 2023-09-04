@@ -26,10 +26,10 @@ pub fn sum<D: Clone + Serialize + DeserializeOwned, N: Add<Output=N> + Default, 
     value
 }
 
-/// Aggregator function that calculate the mean of the values of the function property.
+/// Aggregator function that calculate the average of the values of the function property.
 /// Example:
 /// ```
-/// use combee::{dataframe::DataFrame, functions::{mean, all}};
+/// use combee::{dataframe::DataFrame, functions::{avg, all}};
 /// use serde::{Serialize, Deserialize};
 ///
 /// #[derive(Clone, Serialize, Deserialize)]
@@ -39,9 +39,9 @@ pub fn sum<D: Clone + Serialize + DeserializeOwned, N: Add<Output=N> + Default, 
 /// }
 ///
 /// let df = DataFrame::new(vec![D { name: "jujuba".to_string(), age: 26}, D { name: "xpto".to_string(), age: 40}, D { name: "rainbow".to_string(), age: 30}]);
-/// println!("{:?}", df.groupby(all).agg(|_, g| mean(g, |x| x.age as f64)).head(1));
+/// println!("{:?}", df.groupby(all).agg(|_, g| avg(g, |x| x.age as f64)).head(1));
 /// ```
-pub fn mean<D: Clone + Serialize + DeserializeOwned, N: Div<f64, Output=N> + Add<Output=N> + Default, F>(group: &Group<D>, property: F) -> N where F: Fn(&D) -> N {
+pub fn avg<D: Clone + Serialize + DeserializeOwned, N: Div<f64, Output=N> + Add<Output=N> + Default, F>(group: &Group<D>, property: F) -> N where F: Fn(&D) -> N {
     let mut value: N = N::default();
     let mut count: f64 = 0.0;
     for x in group.data.clone() {
@@ -78,7 +78,7 @@ pub fn count<D: Clone + Serialize + DeserializeOwned>(group: &Group<D>) -> usize
 /// Groupby function that group all rows together.
 /// Example:
 /// ```
-/// use combee::{dataframe::DataFrame, functions::{sum, mean, count, all}};
+/// use combee::{dataframe::DataFrame, functions::{sum, avg, count, all}};
 /// use serde::{Serialize, Deserialize};
 ///
 /// #[derive(Clone, Serialize, Deserialize)]
@@ -89,7 +89,7 @@ pub fn count<D: Clone + Serialize + DeserializeOwned>(group: &Group<D>) -> usize
 ///
 /// let df = DataFrame::new(vec![D { name: "jujuba".to_string(), age: 26}, D { name: "xpto".to_string(), age: 40}, D { name: "rainbow".to_string(), age: 30}]);
 /// println!("{:?}", df.groupby(all).agg(|_, g|
-///     (count(g), mean(g, |x| x.age as f64), sum(g, |x| x.age))
+///     (count(g), avg(g, |x| x.age as f64), sum(g, |x| x.age))
 /// ).head(1));
 /// ```
 pub fn all<D: Clone + Serialize + DeserializeOwned>(_: &D) -> usize {
