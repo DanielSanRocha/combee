@@ -12,11 +12,18 @@
 //!
 //! 4. [function@functions::avg] for calculating average value of group of rows.
 //!
-use std::{path::Path, fs::File, io::{BufRead, BufReader}};
-use parquet::{file::serialized_reader::SerializedFileReader, arrow::arrow_reader::ParquetRecordBatchReaderBuilder};
-use serde::{Serialize, de::DeserializeOwned};
-use log;
 use csv;
+use log;
+use parquet::{
+    arrow::arrow_reader::ParquetRecordBatchReaderBuilder,
+    file::serialized_reader::SerializedFileReader,
+};
+use serde::{de::DeserializeOwned, Serialize};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::Path,
+};
 
 use crate::{dataframe::DataFrame, parquet_deserializer::from_row};
 
@@ -58,17 +65,22 @@ mod parquet_deserializer;
 ///
 /// let df = read_csv::<D>("dataset.csv".to_string()).unwrap();
 /// ```
-pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result<dataframe::DataFrame<D>, errors::Error> {
+pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(
+    path: String,
+) -> Result<dataframe::DataFrame<D>, errors::Error> {
     log::debug!("Reading CSV at path '{}'", path);
     match csv::Reader::from_path(path) {
         Ok(mut reader) => {
             let mut data = Vec::new();
 
             for result in reader.deserialize::<D>() {
-
                 let row = match result {
                     Ok(row) => row,
-                    Err(e) => return Err(errors::Error {message: e.to_string()})
+                    Err(e) => {
+                        return Err(errors::Error {
+                            message: e.to_string(),
+                        })
+                    }
                 };
 
                 log::trace!("Read one row of CSV, loading into the array...");
@@ -76,8 +88,10 @@ pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result
             }
 
             Ok(dataframe::DataFrame::new(data))
-        },
-        Err(e) => Err(errors::Error {message: e.to_string()})
+        }
+        Err(e) => Err(errors::Error {
+            message: e.to_string(),
+        }),
     }
 }
 
@@ -104,32 +118,42 @@ pub fn read_csv<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result
 ///
 /// let df = read_parquet::<D>("complex.parquet".to_string()).unwrap();
 /// ```
-pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Result<dataframe::DataFrame<D>, errors::Error> {
+pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(
+    path: String,
+) -> Result<dataframe::DataFrame<D>, errors::Error> {
     log::debug!("Reading Parquet at path '{}'", path);
     let p: &Path = Path::new(&path);
 
     if let Ok(file) = File::open(&p) {
         let reader = match SerializedFileReader::new(file) {
             Ok(r) => r,
-            Err(e) => return Err(errors::Error { message: e.to_string() })
+            Err(e) => {
+                return Err(errors::Error {
+                    message: e.to_string(),
+                })
+            }
         };
 
         let mut data = Vec::new();
         for r in reader.into_iter() {
             match r {
-                Ok(row) => {
-                    match from_row(&row) {
-                        Ok(d) => data.push(d),
-                        Err(e) => return Err(e)
-                    }
+                Ok(row) => match from_row(&row) {
+                    Ok(d) => data.push(d),
+                    Err(e) => return Err(e),
                 },
-                Err(e) => return Err(errors::Error { message: e.to_string() })
+                Err(e) => {
+                    return Err(errors::Error {
+                        message: e.to_string(),
+                    })
+                }
             }
         }
 
         return Ok(DataFrame::new(data));
     } else {
-        return Err(errors::Error { message: format!("Could not open file {}", path) })
+        return Err(errors::Error {
+            message: format!("Could not open file {}", path),
+        });
     }
 }
 
@@ -144,7 +168,11 @@ pub fn read_parquet<D: Clone + DeserializeOwned + Serialize>(path: String) -> Re
 pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
     let file = match File::open(&path) {
         Ok(f) => f,
-        Err(_) => return Err(errors::Error { message: format!("Could not open CSV file at path {}!", path) })
+        Err(_) => {
+            return Err(errors::Error {
+                message: format!("Could not open CSV file at path {}!", path),
+            })
+        }
     };
 
     let mut buffer = BufReader::new(file);
@@ -152,10 +180,18 @@ pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
 
     match buffer.read_line(&mut first_line) {
         Ok(_) => (),
-        Err(_) => return Err(errors::Error { message: format!("Could not read first line of CSV file at path {}", path) })
+        Err(_) => {
+            return Err(errors::Error {
+                message: format!("Could not read first line of CSV file at path {}", path),
+            })
+        }
     };
 
-    Ok(first_line.trim().split(",").map(|x| String::from(x)).collect())
+    Ok(first_line
+        .trim()
+        .split(",")
+        .map(|x| String::from(x))
+        .collect())
 }
 
 /// Returns the schema of a parquet as a string.
@@ -168,12 +204,20 @@ pub fn read_csv_schema(path: String) -> Result<Vec<String>, errors::Error> {
 pub fn read_parquet_schema(path: String) -> Result<String, errors::Error> {
     let file = match File::open(&path) {
         Ok(f) => f,
-        Err(e) => return Err(errors::Error { message: e.to_string() })
+        Err(e) => {
+            return Err(errors::Error {
+                message: e.to_string(),
+            })
+        }
     };
 
     let builder = match ParquetRecordBatchReaderBuilder::try_new(file) {
         Ok(b) => b,
-        Err(e) => return Err(errors::Error { message: e.to_string() })
+        Err(e) => {
+            return Err(errors::Error {
+                message: e.to_string(),
+            })
+        }
     };
 
     Ok(format!("{}", builder.schema()))

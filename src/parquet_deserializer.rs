@@ -50,10 +50,7 @@ impl<'de, 'a> de::MapAccess<'de> for MapAccess<'a, 'de> {
         }
     }
 
-    fn next_value_seed<T: de::DeserializeSeed<'de>>(
-        &mut self,
-        seed: T,
-    ) -> Result<T::Value, Error> {
+    fn next_value_seed<T: de::DeserializeSeed<'de>>(&mut self, seed: T) -> Result<T::Value, Error> {
         let value = self.value.take().unwrap();
         self.de.value = Some(value);
         Ok(seed.deserialize(&mut *self.de)?)

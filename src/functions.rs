@@ -1,5 +1,5 @@
+use serde::{de::DeserializeOwned, Serialize};
 use std::ops::{Add, Div};
-use serde::{Serialize, de::DeserializeOwned};
 
 use crate::dataframe::Group;
 
@@ -18,7 +18,13 @@ use crate::dataframe::Group;
 /// let df = DataFrame::new(vec![D { name: "jujuba".to_string(), age: 26}, D { name: "xpto".to_string(), age: 40}, D { name: "rainbow".to_string(), age: 30}]);
 /// println!("{:?}", df.groupby(all).agg(|_, g| sum(g, |x| x.age)).head(1));
 /// ```
-pub fn sum<D: Clone + Serialize + DeserializeOwned, N: Add<Output=N> + Default, F>(group: &Group<D>, property: F) -> N where F: Fn(&D) -> N {
+pub fn sum<D: Clone + Serialize + DeserializeOwned, N: Add<Output = N> + Default, F>(
+    group: &Group<D>,
+    property: F,
+) -> N
+where
+    F: Fn(&D) -> N,
+{
     let mut value: N = N::default();
     for &x in group.data.clone().into_iter() {
         value = value + property(x);
@@ -41,7 +47,17 @@ pub fn sum<D: Clone + Serialize + DeserializeOwned, N: Add<Output=N> + Default, 
 /// let df = DataFrame::new(vec![D { name: "jujuba".to_string(), age: 26}, D { name: "xpto".to_string(), age: 40}, D { name: "rainbow".to_string(), age: 30}]);
 /// println!("{:?}", df.groupby(all).agg(|_, g| avg(g, |x| x.age as f64)).head(1));
 /// ```
-pub fn avg<D: Clone + Serialize + DeserializeOwned, N: Div<f64, Output=N> + Add<Output=N> + Default, F>(group: &Group<D>, property: F) -> N where F: Fn(&D) -> N {
+pub fn avg<
+    D: Clone + Serialize + DeserializeOwned,
+    N: Div<f64, Output = N> + Add<Output = N> + Default,
+    F,
+>(
+    group: &Group<D>,
+    property: F,
+) -> N
+where
+    F: Fn(&D) -> N,
+{
     let mut value: N = N::default();
     let mut count: f64 = 0.0;
     for x in group.data.clone() {
@@ -49,7 +65,7 @@ pub fn avg<D: Clone + Serialize + DeserializeOwned, N: Div<f64, Output=N> + Add<
         count += 1.0;
     }
 
-    value/count
+    value / count
 }
 
 /// Aggregator function that returns the number of elements in a given group.
@@ -113,7 +129,10 @@ pub fn all<D: Clone + Serialize + DeserializeOwned>(_: &D) -> usize {
 ///     max(g, |x| x.age)
 /// ).head(1));
 /// ```
-pub fn max<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>, f: F) -> N where F: Fn(&D) -> N {
+pub fn max<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>, f: F) -> N
+where
+    F: Fn(&D) -> N,
+{
     if group.data.len() == 0 {
         panic!("Trying to calculate maximum value of empty DataFrame!")
     }
@@ -126,7 +145,7 @@ pub fn max<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>,
         if nvalue > value {
             value = nvalue;
         }
-    };
+    }
     value
 }
 
@@ -147,7 +166,10 @@ pub fn max<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>,
 ///     min(g, |x| x.age)
 /// ).head(1));
 /// ```
-pub fn min<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>, f: F) -> N where F: Fn(&D) -> N {
+pub fn min<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>, f: F) -> N
+where
+    F: Fn(&D) -> N,
+{
     if group.data.len() == 0 {
         panic!("Trying to calculate maximum value of empty DataFrame!")
     }
@@ -160,6 +182,6 @@ pub fn min<D: Clone + Serialize + DeserializeOwned, N: Ord, F>(group: &Group<D>,
         if nvalue < value {
             value = nvalue;
         }
-    };
+    }
     value
 }

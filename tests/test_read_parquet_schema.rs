@@ -1,4 +1,4 @@
-use combee::{read_parquet_schema};
+use combee::read_parquet_schema;
 
 #[test]
 fn test_read_parquet_schema_basic() {

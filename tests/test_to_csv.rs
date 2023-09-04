@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use combee::{dataframe::DataFrame, read_csv};
 
@@ -6,7 +6,7 @@ use combee::{dataframe::DataFrame, read_csv};
 struct D {
     index: String,
     x: f32,
-    y: f32
+    y: f32,
 }
 
 #[test]
@@ -14,8 +14,16 @@ fn test_to_csv_basic() {
     let path = String::from("tmp/basic.csv");
 
     let df = DataFrame::new(vec![
-        D {index: String::from("xpto"), x: 1.2, y: -0.3},
-        D {index: String::from("jujuba"), x: -0.1, y: 42.0}
+        D {
+            index: String::from("xpto"),
+            x: 1.2,
+            y: -0.3,
+        },
+        D {
+            index: String::from("jujuba"),
+            x: -0.1,
+            y: 42.0,
+        },
     ]);
 
     df.to_csv(path.clone()).unwrap();
@@ -38,8 +46,16 @@ fn test_to_csv_basic_slice() {
     let path = String::from("tmp/slice.csv");
 
     let df = DataFrame::new(vec![
-        D {index: String::from("xpto"), x: 1.2, y: -0.3},
-        D {index: String::from("jujuba"), x: -0.1, y: 42.0}
+        D {
+            index: String::from("xpto"),
+            x: 1.2,
+            y: -0.3,
+        },
+        D {
+            index: String::from("jujuba"),
+            x: -0.1,
+            y: 42.0,
+        },
     ]);
 
     let df_head = df.head(1);
@@ -54,4 +70,3 @@ fn test_to_csv_basic_slice() {
     assert_eq!(row_xpto.x, 1.2);
     assert_eq!(row_xpto.y, -0.3);
 }
-
