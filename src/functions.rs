@@ -68,6 +68,33 @@ where
     value / count
 }
 
+/// Aggregator function that constructs a vector of the values of the function property.
+/// Example:
+/// ```
+/// use combee::{dataframe::DataFrame, functions::{vec, all}};
+/// use serde::{Serialize, Deserialize};
+///
+/// #[derive(Clone, Serialize, Deserialize)]
+/// struct D {
+///     name: String,
+///     age: u32
+/// }
+///
+/// let df = DataFrame::new(vec![D { name: "jujuba".to_string(), age: 26}, D { name: "xpto".to_string(), age: 40}, D { name: "rainbow".to_string(), age: 30}]);
+/// println!("{:?}", df.groupby(all).agg(|_, g| vec(g, |x| x.age)).head(1));
+/// ```
+pub fn vec<D: Clone + Serialize + DeserializeOwned, I, F>(group: &Group<D>, property: F) -> Vec<I>
+where
+    F: Fn(&D) -> I,
+{
+    let mut vec = Vec::new();
+    for x in group.data.clone() {
+        vec.push(property(*x));
+    }
+
+    vec
+}
+
 /// Aggregator function that returns the number of elements in a given group.
 /// Example:
 /// ```
